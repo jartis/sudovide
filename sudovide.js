@@ -1,5 +1,5 @@
 var AUTOGAME = false;
-var DIFFICULTY = 3;
+var DIFFICULTY = 0;
 
 window.onload = function () {
 
@@ -37,6 +37,7 @@ window.onload = function () {
     var lastLastX = -1;
     var lastLastY = -1;
     var groupHist = [];
+    var youwon = false;
 
     // Add the handlers
     window.addEventListener('resize', resizeGame);
@@ -63,6 +64,19 @@ window.onload = function () {
         lastCellY = Math.floor((mY - 45) / 90);
         lastLastX = -1;
         lastLastY = -1;
+
+        // Special case: Group hist check, if there are any empty groups, start one here.
+        if (grid[lastCellX][lastCellY].group == 0) {
+            updateGroupHist();
+            for (let i = 1; i < 10; i++) {
+                if (groupHist[i] == 0) {
+                    grid[lastCellX][lastCellY].group = i;
+                    lastLastX = lastCellX;
+                    lastLastY = lastCellY;
+                    return;
+                }
+            }
+        }
     }
 
     function mouseUp(e) {
@@ -153,8 +167,47 @@ window.onload = function () {
         }
     }
 
-    function updateGroupHist() {
+    function checkForWin() {
+        updateGroupHist();
+
+        // Only keep going if there's the right number in each group
+        for (let i = 1; i < 10; i++) {
+            if (groupHist[i] != 9) return false;
+        }
+
+        // Okay, let's do the real big check. 
+        let winGrid = [];
         for (let i = 0; i < 9; i++) {
+            winGrid[i] = [];
+            for (let j = 0; j < 9; j++) {
+                winGrid[i][j] = false;
+            }
+        }
+
+        // Make the win grid
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                let cVal = grid[x][y].val;
+                let cGrp = grid[x][y].group;
+                if (cGrp == 0) return false; // Shouldn't happen but just in case...
+                winGrid[cGrp - 1][cVal - 1] = true;
+            }
+        }
+
+        // VERIFY the win grid
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                if (!winGrid[x][y]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    function updateGroupHist() {
+        for (let i = 0; i < 10; i++) {
             groupHist[i] = 0;
         }
         for (let x = 0; x < 9; x++) {
@@ -168,6 +221,9 @@ window.onload = function () {
 
     function update() {
         window.setTimeout(update, 1000 / 60);
+        if (checkForWin()) {
+            youwon = true;
+        }
     }
 
     function drawHud() {
@@ -179,17 +235,15 @@ window.onload = function () {
         ctx.fillStyle = fgcolor;
         ctx.fillText("Sudovide", 1049, 49);
 
-        ctx.font = "30px Arial";
+        if (youwon) {
+            ctx.font = "30px Arial";
 
-        // ctx.fillStyle = "#000000";
-        // ctx.fillText("Score:", 1051, 151);
-        // ctx.fillStyle = fgcolor;
-        // ctx.fillText("Score:", 1049, 149);
+            ctx.fillStyle = "#000000";
+            ctx.fillText("You Won!", 1051, 151);
+            ctx.fillStyle = fgcolor;
+            ctx.fillText("You Won!", 1049, 149);
+        }
 
-        // ctx.fillStyle = "#000000";
-        // ctx.fillText(dscore, 1051, 201);
-        // ctx.fillStyle = fgcolor;
-        // ctx.fillText(dscore, 1049, 199);
     }
 
     // Graphics and Drawing
@@ -378,9 +432,81 @@ window.onload = function () {
             }
         }
 
+        // Difficulty settings!
+        switch (DIFFICULTY) {
+            case 0: // Easiest: Just connect them
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val % 3 == grid[x][y].group % 3) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
+                    }
+                }
+                break;
+            case 1: // Easy: Connect patchier groups
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val % 2 != grid[x][y].group % 2) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
+                    }
+                }
+                break;
+            case 2: // Medium: Connect with only 3
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val % 3 != grid[x][y].group % 3) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
+                    }
+                }
+                break;
+            case 3: // Hard: Each group has a unique number
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val != grid[x][y].group) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
+                    }
+                }
+                break;
+            case 4: // Master: Find a spot where three/four intersect
+                for (let x = 0; x < 8; x++) {
+                    for (let y = 0; y < 8; y++) {
+                        if (grid[x][y].group != grid[x + 1][y].group &&
+                            grid[x][y].group != grid[x][y + 1].group &&
+                            grid[x + 1][y].group != grid[x][y + 1].group) {
+                            locks[x][y] = true;
+                            locks[x + 1][y] = true;
+                            locks[x][y + 1] = true;
+                            x = 8;
+                            y = 8;
+                            continue;
+                        }
+                    }
+                }
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (!locks[x][y]) {
+                            grid[x][y].group = 0;
+                        }
+                    }
+                }
+                break;
+        }
+
+
         // Shuffle the grid!
         for (let i = 0; i < 50; i++) {
-            switch(Math.floor(Math.random() * 4)) {
+            switch (Math.floor(Math.random() * 4)) {
                 case 0:
                     break;
                 case 1:
@@ -392,42 +518,6 @@ window.onload = function () {
                 case 3:
                     flipGrid();
                     break;
-            }
-        }
-
-        // Difficulty settings!
-        for (let x = 0; x < 9; x++) {
-            for (let y = 0; y < 9; y++) {
-                switch (DIFFICULTY) {
-                    case 0: // Easiest: Just connect them
-                        if (grid[x][y].val % 3 == grid[x][y].group % 3) {
-                            grid[x][y].group = 0;
-                        } else {
-                            locks[x][y] = true;
-                        }
-                        break;
-                    case 1: // Easy: Connect patchier groups
-                        if (grid[x][y].val % 2 != grid[x][y].group % 2) {
-                            grid[x][y].group = 0;
-                        } else {
-                            locks[x][y] = true;
-                        }
-                        break;
-                    case 2: // Medium: Connect with only 3
-                        if (grid[x][y].val % 3 != grid[x][y].group % 3) {
-                            grid[x][y].group = 0;
-                        } else {
-                            locks[x][y] = true;
-                        }
-                        break;
-                    case 3: // Hard: Each group has a unique number
-                        if (grid[x][y].val != grid[x][y].group) {
-                            grid[x][y].group = 0;
-                        } else {
-                            locks[x][y] = true;
-                        }
-                        break;
-                }
             }
         }
     }
@@ -451,30 +541,38 @@ window.onload = function () {
 
     function rotateGrid() {
         let newGrid = [];
+        let newLocks = [];
         for (let i = 0; i < 9; i++) {
             newGrid[i] = [];
+            newLocks[i] = [];
         }
 
         for (let x = 0; x < 9; x++) {
             for (let y = 0; y < 9; y++) {
                 newGrid[y][x] = grid[x][y];
+                newLocks[y][x] = locks[x][y];
             }
         }
         grid = newGrid;
+        locks = newLocks;
     }
 
     function flipGrid() {
         let newGrid = [];
+        let newLocks = [];
         for (let i = 0; i < 9; i++) {
             newGrid[i] = [];
+            newLocks[i] = [];
         }
 
         for (let x = 0; x < 9; x++) {
             for (let y = 0; y < 9; y++) {
-                newGrid[x][y] = grid[8-x][y];
+                newGrid[x][y] = grid[8 - x][y];
+                newLocks[x][y] = locks[8 - x][y];
             }
         }
         grid = newGrid;
+        locks = newLocks;
     }
 };
 
