@@ -26,7 +26,8 @@ window.onload = function () {
 
     // Declare game vars
 
-    var grid;
+    var grid = [];
+    var locks = [];
     var fgcolor = getRandomRgb(50, 100);
     var bgcolor = getRandomRgb(200, 250);
     var nextGroup = 1; // The next group to start assigning on clicking empty
@@ -35,6 +36,7 @@ window.onload = function () {
     var lastCellY = -1;
     var lastLastX = -1;
     var lastLastY = -1;
+    var groupHist = [];
 
     // Add the handlers
     window.addEventListener('resize', resizeGame);
@@ -45,7 +47,7 @@ window.onload = function () {
 
     // Kick everything off!
     initGrid();
-    makeSampleGrid(); // CUT THIS
+    generatePuzzle(); // CUT THIS
     resizeGame();
     window.setTimeout(update, 1000 / 60);
     drawScreen();
@@ -72,7 +74,7 @@ window.onload = function () {
 
         if (lastLastX == -1 && lastLastY == -1) {
             if (newX == lastCellX && newY == lastCellY) {
-                if (grid[newX][newY].group != 0) {
+                if (grid[newX][newY].group != 0 && !locks[newX][newY]) {
                     grid[newX][newY].group = 0;
                 }
             }
@@ -93,7 +95,9 @@ window.onload = function () {
             if (grid[lastCellX][lastCellY].group == 0) {
                 // TODO: Init new groups
                 // Drag emptiness into the square?
-                grid[cellX][cellY].group = 0;
+                if (!locks[cellX][cellY]) {
+                    grid[cellX][cellY].group = 0;
+                }
                 lastLastX = lastCellX;
                 lastLastY = lastCellY;
                 lastCellX = cellX;
@@ -102,13 +106,17 @@ window.onload = function () {
             if (grid[lastCellX][lastCellY].group > 0) {
                 if (lastLastX == -1 || lastLastY == -1) {
                     if (grid[cellX][cellY].group != grid[lastCellX][lastCellY].group) {
-                        grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                        if (!locks[cellX][cellY]) {
+                            grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                        }
                         lastLastX = lastCellX;
                         lastLastY = lastCellY;
                         lastCellX = cellX;
                         lastCellY = cellY;
                     } else {
-                        grid[lastCellX][lastCellY].group = 0;
+                        if (!locks[lastCellX][lastCellY]) {
+                            grid[lastCellX][lastCellY].group = 0;
+                        }
                         lastLastX = lastCellX;
                         lastLastY = lastCellY;
                         lastCellX = cellX;
@@ -116,7 +124,9 @@ window.onload = function () {
                     }
                 } else {
                     if (grid[cellX][cellY].group != grid[lastCellX][lastCellY].group) {
-                        grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                        if (!locks[cellX][cellY]) {
+                            grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                        }
                         lastLastX = lastCellX;
                         lastLastY = lastCellY;
                         lastCellX = cellX;
@@ -129,13 +139,29 @@ window.onload = function () {
 
     function initGrid() {
         grid = [];
+        locks = [];
         for (let x = 0; x < 10; x++) {
             grid[x] = [];
+            locks[x] = [];
             for (let y = 0; y < 10; y++) {
                 grid[x][y] = {
                     val: 0,
                     group: 0,
                 };
+                locks[x][y] = false;
+            }
+        }
+    }
+
+    function updateGroupHist() {
+        for (let i = 0; i < 9; i++) {
+            groupHist[i] = 0;
+        }
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                if (grid[x][y].group > 0) {
+                    groupHist[grid[x][y].group]++;
+                }
             }
         }
     }
@@ -236,10 +262,20 @@ window.onload = function () {
                     ctx.font = "60px Arial";
                     ctx.textBaseline = "middle";
                     ctx.textAlign = "center";
-                    ctx.fillStyle = "#000000";
-                    ctx.fillText(grid[x][y].val, (90 * x) + 46, (90 * y) + 51);
-                    ctx.fillStyle = fgcolor;
-                    ctx.fillText(grid[x][y].val, (90 * x) + 44, (90 * y) + 49);
+                    if (locks[x][y]) {
+                        ctx.fillStyle = "#000000";
+                        ctx.fillText(grid[x][y].val, (90 * x) + 46, (90 * y) + 51);
+                        ctx.fillText(grid[x][y].val, (90 * x) + 44, (90 * y) + 49);
+                        ctx.fillText(grid[x][y].val, (90 * x) + 46, (90 * y) + 49);
+                        ctx.fillText(grid[x][y].val, (90 * x) + 44, (90 * y) + 51);
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
+                    } else {
+                        ctx.fillStyle = "#000000";
+                        ctx.fillText(grid[x][y].val, (90 * x) + 46, (90 * y) + 51);
+                        ctx.fillStyle = fgcolor;
+                        ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
+                    }
                 }
             }
         }
@@ -279,7 +315,7 @@ window.onload = function () {
                     }
 
                     // Bottom Left Corners:
-                    if (x > 0 && y < 9) {
+                    if (x > 0 && y < 8) {
                         if (grid[x - 1][y].group == grid[x][y].group &&
                             grid[x][y + 1].group == grid[x][y].group &&
                             grid[x - 1][y + 1].group != grid[x][y].group) {
@@ -288,7 +324,7 @@ window.onload = function () {
                     }
 
                     // Top Right Corners:
-                    if (x < 9 && y > 0) {
+                    if (x < 8 && y > 0) {
                         if (grid[x + 1][y].group == grid[x][y].group &&
                             grid[x][y - 1].group == grid[x][y].group &&
                             grid[x + 1][y - 1].group != grid[x][y].group) {
@@ -297,7 +333,7 @@ window.onload = function () {
                     }
 
                     // Bottom Right Corners:
-                    if (x < 9 && y < 9) {
+                    if (x < 8 && y < 8) {
                         if (grid[x + 1][y].group == grid[x][y].group &&
                             grid[x][y + 1].group == grid[x][y].group &&
                             grid[x + 1][y + 1].group != grid[x][y].group) {
@@ -311,8 +347,9 @@ window.onload = function () {
         ctx.setTransform();
     }
 
-    function makeSampleGrid() {
-        let puzNum = Math.floor(Math.random() * 10);
+    function generatePuzzle() {
+        //let puzNum = Math.floor(Math.random() * basePuzzles.length);
+        let puzNum = 2;
         let puz = basePuzzles[puzNum];
 
         // Make an empty grid
@@ -341,36 +378,103 @@ window.onload = function () {
             }
         }
 
+        // Shuffle the grid!
+        for (let i = 0; i < 50; i++) {
+            switch(Math.floor(Math.random() * 4)) {
+                case 0:
+                    break;
+                case 1:
+                    swapDigits();
+                    break;
+                case 2:
+                    rotateGrid();
+                    break;
+                case 3:
+                    flipGrid();
+                    break;
+            }
+        }
+
+        // Difficulty settings!
         for (let x = 0; x < 9; x++) {
             for (let y = 0; y < 9; y++) {
-                // Difficulty settings!
                 switch (DIFFICULTY) {
                     case 0: // Easiest: Just connect them
                         if (grid[x][y].val % 3 == grid[x][y].group % 3) {
                             grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
                         }
                         break;
                     case 1: // Easy: Connect patchier groups
                         if (grid[x][y].val % 2 != grid[x][y].group % 2) {
                             grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
                         }
                         break;
                     case 2: // Medium: Connect with only 3
                         if (grid[x][y].val % 3 != grid[x][y].group % 3) {
                             grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
                         }
                         break;
                     case 3: // Hard: Each group has a unique number
                         if (grid[x][y].val != grid[x][y].group) {
                             grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
                         }
-                        break;
-                    case 4: // Mean: No groups.
-                        grid[x][y].group = 0;
                         break;
                 }
             }
         }
+    }
+
+    function swapDigits() {
+        let digA = Math.ceil(Math.random() * 9);
+        let digB = Math.ceil(Math.random() * 9);
+        while (digA == digB) {
+            digB = Math.ceil(Math.random() * 9);
+        }
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                if (grid[x][y].val == digA) {
+                    grid[x][y].val = digB;
+                } else if (grid[x][y].val == digB) {
+                    grid[x][y].val = digA;
+                }
+            }
+        }
+    }
+
+    function rotateGrid() {
+        let newGrid = [];
+        for (let i = 0; i < 9; i++) {
+            newGrid[i] = [];
+        }
+
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                newGrid[y][x] = grid[x][y];
+            }
+        }
+        grid = newGrid;
+    }
+
+    function flipGrid() {
+        let newGrid = [];
+        for (let i = 0; i < 9; i++) {
+            newGrid[i] = [];
+        }
+
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                newGrid[x][y] = grid[8-x][y];
+            }
+        }
+        grid = newGrid;
     }
 };
 
@@ -402,7 +506,7 @@ var baseGroups = [
 var basePuzzles = [
     "754819623632148759871326495485697312169254837243971568397562184918435276526783941882766666822766665822799995822779955822777955833474955834444915834441111333331111",
     "853217649761839452342976581618495327279541863926754138184362975597683214435128796666777222666777722866657722888855551888855551999933334999933334911134444111111444",
-    "591487623928345716256973184783261459834156297467819532179632845315724968642598371416677288416677288411667288411667288441167118441557229435557299335555999333333999",
+    "591487623928345716256973184783261459834156297467819532179632845315724968642598371416677288416677288411667288411667288441167228441557229435557299335555999333333999",
     "789314625195823764432679581256741839513486972948162357627935148371258496864597213331111119334444199333444119533544999555558899522258888222227888666617777666667777",
     "289475136497138265361859472574213689613782594725964318142697853856321947938546721775555555777785511788888221788822221766662221996666441996333441999333441993334441",
     "219835647864279153532416789795348216476921538153692874981763425327584961648157392666999922669999922663333322633343222644444488774111488711151188777155888777555555",
