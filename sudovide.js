@@ -1,5 +1,5 @@
 var AUTOGAME = false;
-var DIFFICULTY = 0;
+var DIFFICULTY = 3;
 
 window.onload = function () {
 

@@ -9,3 +9,7 @@
 * SFX (?)
 * Appropriately show effects on win
 * More VFX
+    * VFX update: Cells own position? (for vibing / cascading)
+* Game Modes: Timed, score, "No Return"?
+* Cheat codes to enable certain modes?
+* "New Game" button / option / logic with modal?
