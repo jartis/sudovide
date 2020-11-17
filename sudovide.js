@@ -1,5 +1,7 @@
 var AUTOGAME = false;
-var DIFFICULTY = 3;
+var DIFFICULTY = 0;
+var SHOWCOMPLETE = true;
+var SHOWERROR = true;
 
 window.onload = function () {
 
@@ -27,6 +29,7 @@ window.onload = function () {
     // Declare game vars
 
     var grid = [];
+    var winGrid = [];
     var locks = [];
     var fgcolor = getRandomRgb(50, 100);
     var bgcolor = getRandomRgb(200, 250);
@@ -154,29 +157,35 @@ window.onload = function () {
     function initGrid() {
         grid = [];
         locks = [];
+        winGrid = [];
         for (let x = 0; x < 10; x++) {
             grid[x] = [];
             locks[x] = [];
+            winGrid[x] = [];
             for (let y = 0; y < 10; y++) {
                 grid[x][y] = {
                     val: 0,
                     group: 0,
                 };
                 locks[x][y] = false;
+                winGrid[x][y] = false;
             }
         }
     }
 
     function checkForWin() {
+        let didWin = true;
         updateGroupHist();
 
         // Only keep going if there's the right number in each group
         for (let i = 1; i < 10; i++) {
-            if (groupHist[i] != 9) return false;
+            if (groupHist[i] != 9) {
+                didWin = false;
+            }
         }
 
         // Okay, let's do the real big check. 
-        let winGrid = [];
+        winGrid = [];
         for (let i = 0; i < 9; i++) {
             winGrid[i] = [];
             for (let j = 0; j < 9; j++) {
@@ -189,8 +198,11 @@ window.onload = function () {
             for (let y = 0; y < 9; y++) {
                 let cVal = grid[x][y].val;
                 let cGrp = grid[x][y].group;
-                if (cGrp == 0) return false; // Shouldn't happen but just in case...
-                winGrid[cGrp - 1][cVal - 1] = true;
+                if (cGrp == 0) {
+                    didWin = false;
+                } else {
+                    winGrid[cGrp - 1][cVal - 1] = true;
+                }
             }
         }
 
@@ -198,12 +210,12 @@ window.onload = function () {
         for (let x = 0; x < 9; x++) {
             for (let y = 0; y < 9; y++) {
                 if (!winGrid[x][y]) {
-                    return false;
+                    didWin = false;
                 }
             }
         }
 
-        return true;
+        return didWin;
     }
 
     function updateGroupHist() {
@@ -294,6 +306,22 @@ window.onload = function () {
         ctx.lineWidth = 3;
         ctx.strokeStyle = fgcolor;
 
+        checkForWin();
+        let grps = [];
+        let highlightGrid = emptyBoolGrid();
+        for (let grp = 0; grp < 9; grp++) {
+            grps[grp] = false;
+            let allFull = true;
+            for (let dig = 0; dig < 9; dig++) {
+                if (!winGrid[grp][dig]) {
+                    allFull = false;
+                }
+            }
+            if (allFull && groupHist[grp + 1] == 9) {
+                grps[grp] = true;
+            }
+        }
+
         // Highlights?
         // if (drawHighlights && canMove) {
         //     ctx.fillStyle = "rgb(255, 255, 200, 0.25)";
@@ -313,10 +341,11 @@ window.onload = function () {
                 ctx.stroke();
 
                 if (grid[x][y].val > 0) {
-                    ctx.font = "60px Arial";
+                    ctx.font = "60px Sans";
                     ctx.textBaseline = "middle";
                     ctx.textAlign = "center";
                     if (locks[x][y]) {
+                        ctx.font = "60px Arial";
                         ctx.fillStyle = "#000000";
                         ctx.fillText(grid[x][y].val, (90 * x) + 46, (90 * y) + 51);
                         ctx.fillText(grid[x][y].val, (90 * x) + 44, (90 * y) + 49);
@@ -325,10 +354,17 @@ window.onload = function () {
                         ctx.fillStyle = "#FFFFFF";
                         ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                     } else {
+                        ctx.font = "60px Arial";
                         ctx.fillStyle = "#000000";
                         ctx.fillText(grid[x][y].val, (90 * x) + 46, (90 * y) + 51);
                         ctx.fillStyle = fgcolor;
                         ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
+                    }
+                    if (grps[grid[x][y].group - 1]) {
+                        ctx.font = "80px Arial";
+                        ctx.globalAlpha = 0.25;
+                        ctx.fillText("✅", (90 * x) + 45, (90 * y) + 50);
+                        ctx.globalAlpha = 1;
                     }
                 }
             }
@@ -575,6 +611,17 @@ window.onload = function () {
         locks = newLocks;
     }
 };
+
+function emptyBoolGrid() {
+    let g = [];
+    for (let x = 0; x < 9; x++) {
+        g[x] = [];
+        for (let y = 0; y < 9; y++) {
+            g[x][y] = false;
+        }
+    }
+    return g;
+}
 
 //------------ Sample Data ------------//
 var baseGrid = [
