@@ -1,5 +1,5 @@
 var AUTOGAME = false;
-var DIFFICULTY = 0;
+var DIFFICULTY = 4;
 var SHOWCOMPLETE = true;
 var SHOWERROR = true;
 
@@ -288,10 +288,11 @@ window.onload = function () {
     function drawScreen() {
         // Clear to bg
         ctx.fillStyle = bgcolor;
-        ctx.globalAlpha = 0.2;
+        // ctx.globalAlpha = 0.2;
         ctx.fillRect(0, 0, 1200, 900);
-        ctx.globalAlpha = 1;
+        // ctx.globalAlpha = 1;
 
+        drawStatus();
         drawGroups();
         drawGrid();
         drawHud();
@@ -306,22 +307,6 @@ window.onload = function () {
         ctx.lineWidth = 3;
         ctx.strokeStyle = fgcolor;
 
-        checkForWin();
-        let grps = [];
-        let highlightGrid = emptyBoolGrid();
-        for (let grp = 0; grp < 9; grp++) {
-            grps[grp] = false;
-            let allFull = true;
-            for (let dig = 0; dig < 9; dig++) {
-                if (!winGrid[grp][dig]) {
-                    allFull = false;
-                }
-            }
-            if (allFull && groupHist[grp + 1] == 9) {
-                grps[grp] = true;
-            }
-        }
-
         // Highlights?
         // if (drawHighlights && canMove) {
         //     ctx.fillStyle = "rgb(255, 255, 200, 0.25)";
@@ -335,10 +320,10 @@ window.onload = function () {
         for (let x = 0; x < 9; x++) {
             for (let y = 0; y < 9; y++) {
 
-                ctx.beginPath();
-                ctx.strokeStyle = fgcolor;
-                ctx.rect(90 * x, 90 * y, 90, 90);
-                ctx.stroke();
+                // ctx.beginPath();
+                // ctx.strokeStyle = fgcolor;
+                // ctx.rect(90 * x, 90 * y, 90, 90);
+                // ctx.stroke();
 
                 if (grid[x][y].val > 0) {
                     ctx.font = "60px Sans";
@@ -360,26 +345,78 @@ window.onload = function () {
                         ctx.fillStyle = fgcolor;
                         ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                     }
-                    if (grps[grid[x][y].group - 1]) {
-                        ctx.font = "80px Arial";
-                        ctx.globalAlpha = 0.25;
-                        ctx.fillText("✅", (90 * x) + 45, (90 * y) + 50);
-                        ctx.globalAlpha = 1;
-                    }
                 }
             }
         }
         ctx.setTransform();
     }
 
+    function drawStatus() {
+        let grps = [];
+        let highlightGrid = emptyBoolGrid();
+        for (let grp = 0; grp < 9; grp++) {
+            grps[grp] = false;
+            let allFull = true;
+            for (let dig = 0; dig < 9; dig++) {
+                if (!winGrid[grp][dig]) {
+                    allFull = false;
+                }
+            }
+            if (allFull && groupHist[grp + 1] == 9) {
+                grps[grp] = true;
+            }
+        }
+
+        ctx.translate(45, 45);
+        ctx.font = "60px Sans";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                // if (SHOWCOMPLETE && grps[grid[x][y].group - 1]) {
+                //     ctx.font = "60px Arial";
+                //     ctx.globalAlpha = 0.5;
+                //     ctx.fillText("✅", (90 * x) + 45, (90 * y) + 50);
+                //     ctx.globalAlpha = 1;
+                // }
+                // if (SHOWERROR && grid[x][y].group > 0) {
+                //     ctx.font = "70px Arial";
+                //     ctx.globalAlpha = 0.25;
+                //     ctx.fillText("⛔", (90 * x) + 45, (90 * y) + 50);
+                //     ctx.globalAlpha = 1;
+                // }            }
+            }
+        }
+        ctx.setTransform();
+
+    }
+
     // Up = 1, Rt = 2, Dn = 4, Lt = 8
     function drawGroups() {
         ctx.translate(45, 45);
+
+        checkForWin();
+        let grps = [];
+        let highlightGrid = emptyBoolGrid();
+        for (let grp = 0; grp < 9; grp++) {
+            grps[grp] = false;
+            let allFull = true;
+            for (let dig = 0; dig < 9; dig++) {
+                if (!winGrid[grp][dig]) {
+                    allFull = false;
+                }
+            }
+            if (allFull && groupHist[grp + 1] == 9) {
+                grps[grp] = true;
+            }
+        }
 
         for (let x = 0; x < 9; x++) {
             for (let y = 0; y < 9; y++) {
                 if (grid[x][y].group > 0) { // We're in a group!
                     let which = 0; // No walls
+                    let fullOffset = grps[grid[x][y].group - 1] ? 900 : 0;
                     if (y == 0 || grid[x][y - 1].group != grid[x][y].group) {
                         which += 1; // Up
                     }
@@ -392,7 +429,7 @@ window.onload = function () {
                     if (x == 0 || grid[x - 1][y].group != grid[x][y].group) {
                         which += 8; // Lt
                     }
-                    ctx.drawImage(groupsImg, 90 * which, 90 * grid[x][y].group, 90, 90, 90 * x, 90 * y, 90, 90);
+                    ctx.drawImage(groupsImg, 90 * which, 90 * grid[x][y].group + fullOffset, 90, 90, 90 * x, 90 * y, 90, 90);
 
                     // Check for corner addons!
                     // Top Left Corners:
@@ -400,7 +437,7 @@ window.onload = function () {
                         if (grid[x - 1][y].group == grid[x][y].group &&
                             grid[x][y - 1].group == grid[x][y].group &&
                             grid[x - 1][y - 1].group != grid[x][y].group) {
-                            ctx.drawImage(groupsImg, 1440, 90 * grid[x][y].group, 45, 45, 90 * x, 90 * y, 45, 45);
+                            ctx.drawImage(groupsImg, 1440, 90 * grid[x][y].group + fullOffset, 45, 45, 90 * x, 90 * y, 45, 45);
                         }
                     }
 
@@ -409,7 +446,7 @@ window.onload = function () {
                         if (grid[x - 1][y].group == grid[x][y].group &&
                             grid[x][y + 1].group == grid[x][y].group &&
                             grid[x - 1][y + 1].group != grid[x][y].group) {
-                            ctx.drawImage(groupsImg, 1440, (90 * grid[x][y].group) + 45, 45, 45, 90 * x, (90 * y) + 45, 45, 45);
+                            ctx.drawImage(groupsImg, 1440, (90 * grid[x][y].group + fullOffset) + 45, 45, 45, 90 * x, (90 * y) + 45, 45, 45);
                         }
                     }
 
@@ -418,7 +455,7 @@ window.onload = function () {
                         if (grid[x + 1][y].group == grid[x][y].group &&
                             grid[x][y - 1].group == grid[x][y].group &&
                             grid[x + 1][y - 1].group != grid[x][y].group) {
-                            ctx.drawImage(groupsImg, 1440 + 45, 90 * grid[x][y].group, 45, 45, (90 * x) + 45, 90 * y, 45, 45);
+                            ctx.drawImage(groupsImg, 1440 + 45, 90 * grid[x][y].group + fullOffset, 45, 45, (90 * x) + 45, 90 * y, 45, 45);
                         }
                     }
 
@@ -427,7 +464,7 @@ window.onload = function () {
                         if (grid[x + 1][y].group == grid[x][y].group &&
                             grid[x][y + 1].group == grid[x][y].group &&
                             grid[x + 1][y + 1].group != grid[x][y].group) {
-                            ctx.drawImage(groupsImg, 1440 + 45, (90 * grid[x][y].group) + 45, 45, 45, (90 * x) + 45, (90 * y) + 45, 45, 45);
+                            ctx.drawImage(groupsImg, 1440 + 45, (90 * grid[x][y].group + fullOffset) + 45, 45, 45, (90 * x) + 45, (90 * y) + 45, 45, 45);
                         }
                     }
                 }
@@ -438,8 +475,8 @@ window.onload = function () {
     }
 
     function generatePuzzle() {
-        //let puzNum = Math.floor(Math.random() * basePuzzles.length);
-        let puzNum = 2;
+        let puzNum = Math.floor(Math.random() * basePuzzles.length);
+        console.log("Puznum: " + puzNum);
         let puz = basePuzzles[puzNum];
 
         // Make an empty grid
@@ -523,9 +560,9 @@ window.onload = function () {
                             locks[x][y] = true;
                             locks[x + 1][y] = true;
                             locks[x][y + 1] = true;
-                            x = 8;
-                            y = 8;
-                            continue;
+                            // x = 8;
+                            // y = 8;
+                            // continue;
                         }
                     }
                 }
@@ -650,9 +687,9 @@ var baseGroups = [
 
 var basePuzzles = [
     "754819623632148759871326495485697312169254837243971568397562184918435276526783941882766666822766665822799995822779955822777955833474955834444915834441111333331111",
-    "853217649761839452342976581618495327279541863926754138184362975597683214435128796666777222666777722866657722888855551888855551999933334999933334911134444111111444",
+    "853217649761839452342976581618495327279541863926754138184362975597683214435128796666777222666777722866657722888855552888855552999933334999933334911134444111111444",
     "591487623928345716256973184783261459834156297467819532179632845315724968642598371416677288416677288411667288411667288441167228441557229435557299335555999333333999",
-    "789314625195823764432679581256741839513486972948162357627935148371258496864597213331111119334444199333444119533544999555558899522258888222227888666617777666667777",
+    "789314625195823764432679581256741839513486972948162357627935148371258496864597213331111119334444199333444119533544999555558899522258888222227888666627777666667777",
     "289475136497138265361859472574213689613782594725964318142697853856321947938546721775555555777785511788888221788822221766662221996666441996333441999333441993334441",
     "219835647864279153532416789795348216476921538153692874981763425327584961648157392666999922669999922663333322633343222644444488774111488711151188777155888777555555",
     "562943871439871265127536948843269157378692514954128736615784329281457693796315482885559999888555993888555993844411193644441133646471133666771132667772232677722222",

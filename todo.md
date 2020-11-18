@@ -13,3 +13,7 @@
 * Game Modes: Timed, score, "No Return"?
 * Cheat codes to enable certain modes?
 * "New Game" button / option / logic with modal?
+* Make sure groups are contiguous
+~~* Flag completed groups~~
+* Flag errors (multiples within group)
+* Gracefully handle mouse events outside the grid
