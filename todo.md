@@ -1,10 +1,10 @@
 # Todo:
 
 * "Reset Puzzle" button
-~~* Detect win~~
+* ~~Detect win~~
 * Add difficulty selector
 * Add more puzzles
-~~* Create missing groups on blank click~~
+* ~~Create missing groups on blank click~~
 * Save and load
 * SFX (?)
 * Appropriately show effects on win
@@ -14,6 +14,6 @@
 * Cheat codes to enable certain modes?
 * "New Game" button / option / logic with modal?
 * Make sure groups are contiguous
-~~* Flag completed groups~~
+* ~~Flag completed groups~~
 * Flag errors (multiples within group)
 * Gracefully handle mouse events outside the grid

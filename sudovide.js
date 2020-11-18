@@ -42,6 +42,8 @@ window.onload = function () {
     var groupHist = [];
     var youwon = false;
 
+    var showResetButton = true;
+
     // Add the handlers
     window.addEventListener('resize', resizeGame);
     window.addEventListener('mousemove', handleMouseMove);
@@ -68,15 +70,21 @@ window.onload = function () {
         lastLastX = -1;
         lastLastY = -1;
 
-        // Special case: Group hist check, if there are any empty groups, start one here.
-        if (grid[lastCellX][lastCellY].group == 0) {
-            updateGroupHist();
-            for (let i = 1; i < 10; i++) {
-                if (groupHist[i] == 0) {
-                    grid[lastCellX][lastCellY].group = i;
-                    lastLastX = lastCellX;
-                    lastLastY = lastCellY;
-                    return;
+        if (lastCellX < 0 || lastCellY < 0 || lastCellX > 8 || lastCellX > 8) {
+            mDown = false;
+            // Not on the grid, do non grid things
+        } else {
+
+            // Special case: Group hist check, if there are any empty groups, start one here.
+            if (grid[lastCellX][lastCellY].group == 0) {
+                updateGroupHist();
+                for (let i = 1; i < 10; i++) {
+                    if (groupHist[i] == 0) {
+                        grid[lastCellX][lastCellY].group = i;
+                        lastLastX = lastCellX;
+                        lastLastY = lastCellY;
+                        return;
+                    }
                 }
             }
         }
@@ -89,10 +97,16 @@ window.onload = function () {
         let newX = Math.floor((mX - 45) / 90);
         let newY = Math.floor((mY - 45) / 90);
 
-        if (lastLastX == -1 && lastLastY == -1) {
-            if (newX == lastCellX && newY == lastCellY) {
-                if (grid[newX][newY].group != 0 && !locks[newX][newY]) {
-                    grid[newX][newY].group = 0;
+        if (newX > 8 || newY > 8 || newX < 0 || newY < 0) {
+            mDown = false;
+            // Off grid
+        } else {
+
+            if (lastLastX == -1 && lastLastY == -1) {
+                if (newX == lastCellX && newY == lastCellY) {
+                    if (grid[newX][newY].group != 0 && !locks[newX][newY]) {
+                        grid[newX][newY].group = 0;
+                    }
                 }
             }
         }
