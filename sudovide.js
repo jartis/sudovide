@@ -10,7 +10,7 @@ window.onload = function () {
     groupsImg.addEventListener('load', function () {
         let loaded = true;
     }, false);
-    groupsImg.src = 'img/cellbg.png'; // Set source path
+    groupsImg.src = 'img/cellbg3.png'; // Set source path
 
     // Initialize the canvas
     var srcCanvas = document.createElement('canvas');
@@ -43,6 +43,8 @@ window.onload = function () {
     var youwon = false;
 
     var showResetButton = true;
+    var mouseOverResetButton = false;
+    var mouseDownResetButton = false;
 
     // Add the handlers
     window.addEventListener('resize', resizeGame);
@@ -71,10 +73,17 @@ window.onload = function () {
         lastLastY = -1;
 
         if (lastCellX < 0 || lastCellY < 0 || lastCellX > 8 || lastCellX > 8) {
-            mDown = false;
             // Not on the grid, do non grid things
-        } else {
+            mDown = false;
 
+            // Reset button
+            if (mX > 915 && mX < 1185 && mY > 775 && mY < 865) {
+                mouseDownResetButton = true;
+            }
+        } else {
+            if (youwon) {
+                return;
+            }
             // Special case: Group hist check, if there are any empty groups, start one here.
             if (grid[lastCellX][lastCellY].group == 0) {
                 updateGroupHist();
@@ -98,10 +107,16 @@ window.onload = function () {
         let newY = Math.floor((mY - 45) / 90);
 
         if (newX > 8 || newY > 8 || newX < 0 || newY < 0) {
-            mDown = false;
             // Off grid
+            mDown = false;
+            if (mX > 915 && mX < 1185 && mY > 775 && mY < 865 && mouseDownResetButton) {
+                resetGroups();
+            }
+            mouseDownResetButton = false;
         } else {
-
+            if (youwon) {
+                return;
+            }
             if (lastLastX == -1 && lastLastY == -1) {
                 if (newX == lastCellX && newY == lastCellY) {
                     if (grid[newX][newY].group != 0 && !locks[newX][newY]) {
@@ -115,53 +130,61 @@ window.onload = function () {
     function handleClick(e) {}
 
     function handleMouseMove(e) {
-        if (!mDown) return;
 
         let mX = (e.offsetX - screenOffsetX) / gameScale;
         let mY = (e.offsetY - screenOffsetY) / gameScale;
         let cellX = Math.floor((mX - 45) / 90);
         let cellY = Math.floor((mY - 45) / 90);
-        if (cellX < 0 || cellX > 8 || cellY < 0 || cellY > 8) return;
-        if (cellX != lastCellX || cellY != lastCellY) {
-            if (grid[lastCellX][lastCellY].group == 0) {
-                // TODO: Init new groups
-                // Drag emptiness into the square?
-                if (!locks[cellX][cellY]) {
-                    grid[cellX][cellY].group = 0;
-                }
-                lastLastX = lastCellX;
-                lastLastY = lastCellY;
-                lastCellX = cellX;
-                lastCellY = cellY;
-            } else
-            if (grid[lastCellX][lastCellY].group > 0) {
-                if (lastLastX == -1 || lastLastY == -1) {
-                    if (grid[cellX][cellY].group != grid[lastCellX][lastCellY].group) {
-                        if (!locks[cellX][cellY]) {
-                            grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
-                        }
-                        lastLastX = lastCellX;
-                        lastLastY = lastCellY;
-                        lastCellX = cellX;
-                        lastCellY = cellY;
-                    } else {
-                        if (!locks[lastCellX][lastCellY]) {
-                            grid[lastCellX][lastCellY].group = 0;
-                        }
-                        lastLastX = lastCellX;
-                        lastLastY = lastCellY;
-                        lastCellX = cellX;
-                        lastCellY = cellY;
+        if (cellX < 0 || cellX > 8 || cellY < 0 || cellY > 8) {
+            mouseOverResetButton = (mX > 915 && mX < 1185 && mY > 775 && mY < 865);
+        } else {
+            if (!mDown) {
+                return;
+            }
+            if (youwon) {
+                return;
+            }
+            if (cellX != lastCellX || cellY != lastCellY) {
+                if (grid[lastCellX][lastCellY].group == 0) {
+                    // TODO: Init new groups
+                    // Drag emptiness into the square?
+                    if (!locks[cellX][cellY]) {
+                        grid[cellX][cellY].group = 0;
                     }
-                } else {
-                    if (grid[cellX][cellY].group != grid[lastCellX][lastCellY].group) {
-                        if (!locks[cellX][cellY]) {
-                            grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                    lastLastX = lastCellX;
+                    lastLastY = lastCellY;
+                    lastCellX = cellX;
+                    lastCellY = cellY;
+                } else
+                if (grid[lastCellX][lastCellY].group > 0) {
+                    if (lastLastX == -1 || lastLastY == -1) {
+                        if (grid[cellX][cellY].group != grid[lastCellX][lastCellY].group) {
+                            if (!locks[cellX][cellY]) {
+                                grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                            }
+                            lastLastX = lastCellX;
+                            lastLastY = lastCellY;
+                            lastCellX = cellX;
+                            lastCellY = cellY;
+                        } else {
+                            if (!locks[lastCellX][lastCellY]) {
+                                grid[lastCellX][lastCellY].group = 0;
+                            }
+                            lastLastX = lastCellX;
+                            lastLastY = lastCellY;
+                            lastCellX = cellX;
+                            lastCellY = cellY;
                         }
-                        lastLastX = lastCellX;
-                        lastLastY = lastCellY;
-                        lastCellX = cellX;
-                        lastCellY = cellY;
+                    } else {
+                        if (grid[cellX][cellY].group != grid[lastCellX][lastCellY].group) {
+                            if (!locks[cellX][cellY]) {
+                                grid[cellX][cellY].group = grid[lastCellX][lastCellY].group;
+                            }
+                            lastLastX = lastCellX;
+                            lastLastY = lastCellY;
+                            lastCellX = cellX;
+                            lastCellY = cellY;
+                        }
                     }
                 }
             }
@@ -183,6 +206,15 @@ window.onload = function () {
                 };
                 locks[x][y] = false;
                 winGrid[x][y] = false;
+            }
+        }
+    }
+
+    function resetGroups() {
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                if (locks[x][y]) continue;
+                grid[x][y].group = 0;
             }
         }
     }
@@ -270,6 +302,26 @@ window.onload = function () {
             ctx.fillText("You Won!", 1049, 149);
         }
 
+        if (showResetButton) {
+            // FIXME: Pick button color
+            let bOffset = mouseOverResetButton ? 900 : 0;
+            if (mouseDownResetButton) {
+                bOffset = 1800;
+            }
+            ctx.drawImage(groupsImg, 90 * 13, bOffset + 90, 90, 90, 915, 765, 90, 90);
+            ctx.drawImage(groupsImg, 90 * 5, bOffset + 90, 90, 90, 1005, 765, 90, 90);
+            ctx.drawImage(groupsImg, 90 * 7, bOffset + 90, 90, 90, 1095, 765, 90, 90);
+
+            ctx.font = "30px Arial";
+            ctx.fillStyle = "#000000";
+            ctx.fillText("Reset Puzzle", 1051, 801);
+            ctx.fillStyle = "#FFFFFF";
+            if (mouseOverResetButton || mouseDownResetButton) {
+                ctx.fillStyle = fgcolor;
+            }
+            ctx.fillText("Reset Puzzle", 1049, 799);
+        }
+
     }
 
     // Graphics and Drawing
@@ -311,7 +363,7 @@ window.onload = function () {
         drawGrid();
         drawHud();
 
-        dstctx.fillStyle = bgcolor;
+        dstctx.fillStyle = 0;
         dstctx.fillRect(0, 0, dstCanvas.width, dstCanvas.height);
         dstctx.drawImage(srcCanvas, 0, 0, 1200, 900, screenOffsetX, screenOffsetY, newGameWidth, newGameHeight);
         window.requestAnimationFrame(drawScreen);

@@ -1,6 +1,6 @@
 # Todo:
 
-* "Reset Puzzle" button
+* ~~"Reset Puzzle" button~~
 * ~~Detect win~~
 * Add difficulty selector
 * Add more puzzles
@@ -16,4 +16,7 @@
 * Make sure groups are contiguous
 * ~~Flag completed groups~~
 * Flag errors (multiples within group)
-* Gracefully handle mouse events outside the grid
+* ~~Gracefully handle mouse events outside the grid~~
+* Pick random button theme on color switches
+* Color switches on new puzzle / refresh
+* Refactor stuff outside of the onload
