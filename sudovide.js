@@ -1,9 +1,14 @@
+//#region Meta
+const VERSION = 1;
+//#endregion
+
 //#region Game Vars
 var grid = [];
 var winGrid = [];
 var locks = [];
 var fgcolor;
 var bgcolor;
+var uiColor;
 var nextGroup = 1; // The next group to start assigning on clicking empty
 var mDown = false;
 var lastCellX = -1;
@@ -11,17 +16,21 @@ var lastCellY = -1;
 var lastLastX = -1;
 var lastLastY = -1;
 var groupHist = [];
+var gameInProgress = false;
 var youWon = false;
 
 var DIFFICULTY = 3;
-var SHOWCOMPLETE = true;
+var showComplete = true;
 var SHOWERROR = true;
 //#endregion
 
 //#region UI Vars
-var showResetButton = true;
+var showResetButton = false;
+var showNewGameButton = true;
 var mouseOverResetButton = false;
 var mouseDownResetButton = false;
+var mouseOverNewGameButton = false;
+var mouseDownNewGameButton = false;
 //#endregion
 
 //#region Gfx Vars
@@ -70,7 +79,7 @@ function drawScreen() {
     ctx.fillRect(0, 0, 1200, 900);
     ctx.globalAlpha = 1;
 
-    drawStatus();
+    //drawStatus();
     drawGroups();
     drawGrid();
     drawHud();
@@ -81,6 +90,7 @@ function drawScreen() {
     window.requestAnimationFrame(drawScreen);
 }
 
+// Disabled until fixed
 function drawStatus() {
     let grps = [];
     let highlightGrid = emptyBoolGrid();
@@ -270,14 +280,13 @@ function drawHud() {
     }
 
     if (showResetButton) {
-        // FIXME: Pick button color
         let bOffset = mouseOverResetButton ? 900 : 0;
         if (mouseDownResetButton) {
             bOffset = 1800;
         }
-        ctx.drawImage(groupsImg, 90 * 13, bOffset + 90, 90, 90, 895, 765, 90, 90);
-        ctx.drawImage(groupsImg, 90 * 5, bOffset + 90, 90, 90, 985, 765, 90, 90);
-        ctx.drawImage(groupsImg, 90 * 7, bOffset + 90, 90, 90, 1075, 765, 90, 90);
+        ctx.drawImage(groupsImg, 90 * 13, bOffset + uiColor, 90, 90, 895, 765, 90, 90);
+        ctx.drawImage(groupsImg, 90 * 5, bOffset + uiColor, 90, 90, 985, 765, 90, 90);
+        ctx.drawImage(groupsImg, 90 * 7, bOffset + uiColor, 90, 90, 1075, 765, 90, 90);
 
         ctx.font = "36px Arial";
         ctx.fillStyle = "#000000";
@@ -287,6 +296,25 @@ function drawHud() {
             ctx.fillStyle = fgcolor;
         }
         ctx.fillText("Reset Puzzle", 1029, 794);
+    }
+
+    if (showNewGameButton) {
+        let bOffset = mouseOverNewGameButton ? 900 : 0;
+        if (mouseDownNewGameButton) {
+            bOffset = 1800;
+        }
+        ctx.drawImage(groupsImg, 90 * 13, bOffset + uiColor, 90, 90, 895, 135, 90, 90);
+        ctx.drawImage(groupsImg, 90 * 5, bOffset + uiColor, 90, 90, 985, 135, 90, 90);
+        ctx.drawImage(groupsImg, 90 * 7, bOffset + uiColor, 90, 90, 1075, 135, 90, 90);
+
+        ctx.font = "36px Arial";
+        ctx.fillStyle = "#000000";
+        ctx.fillText("New Game", 1031, 166);
+        ctx.fillStyle = "#FFFFFF";
+        if (mouseOverNewGameButton || mouseDownNewGameButton) {
+            ctx.fillStyle = fgcolor;
+        }
+        ctx.fillText("New Game", 1029, 164);
     }
 
 }
@@ -314,8 +342,11 @@ function mouseDown(e) {
         mDown = false;
 
         // Reset button
-        if (mX > 915 && mX < 1185 && mY > 775 && mY < 865) {
+        if (mX > 895 && mX < 1165 && mY > 765 && mY < 855) {
             mouseDownResetButton = true;
+        }
+        else if (mX > 895 && mX < 1165 && mY > 135 && mY < 225) {
+            mouseDownNewGameButton = true;
         }
     } else {
         if (youWon) {
@@ -346,10 +377,15 @@ function mouseUp(e) {
     if (newX > 8 || newY > 8 || newX < 0 || newY < 0) {
         // Off grid
         mDown = false;
-        if (mX > 915 && mX < 1185 && mY > 775 && mY < 865 && mouseDownResetButton) {
+        if (mX > 895 && mX < 1165 && mY > 765 && mY < 855 && mouseDownResetButton) {
             resetGroups();
         }
+        else if (mX > 895 && mX < 1165 && mY > 135 && mY < 225 && mouseDownNewGameButton) {
+            startGame();
+        }
+
         mouseDownResetButton = false;
+        mouseDownNewGameButton = false;
     } else {
         if (youWon) {
             return;
@@ -371,7 +407,8 @@ function handleMouseMove(e) {
     let cellX = Math.floor((mX - 45) / 90);
     let cellY = Math.floor((mY - 45) / 90);
     if (cellX < 0 || cellX > 8 || cellY < 0 || cellY > 8) {
-        mouseOverResetButton = (mX > 915 && mX < 1185 && mY > 775 && mY < 865);
+        mouseOverResetButton = (mX > 895 && mX < 1165 && mY > 765 && mY < 855);
+        mouseOverNewGameButton = (mX > 895 && mX < 1165 && mY > 135 && mY < 225);
     } else {
         if (!mDown) {
             return;
@@ -446,8 +483,18 @@ function resizeGame() {
 }
 
 function update() {
-    window.setTimeout(update, 1000 / 60);
-    if (!youWon) {
+    window.setTimeout(update, 1000 / 24);
+    if (!gameInProgress) {
+        // Switch a random group and a random digit! Animated!
+        let gx = Math.floor(Math.random() * 9);
+        let gy = Math.floor(Math.random() * 9);
+        let nx = Math.floor(Math.random() * 9);
+        let ny = Math.floor(Math.random() * 9);
+        let grp = Math.ceil(Math.random() * 9);
+        let num = Math.ceil(Math.random() * 9);
+        grid[gx][gy].group = grp;
+        grid[nx][ny].val = num;
+    } else if (!youWon) {
         if (checkForWin()) {
             youWon = true;
             showResetButton = false;
@@ -579,7 +626,7 @@ function markGroup(x, y, cGrid) {
 //#endregion
 
 //#region Puzzle Generation
-function generatePuzzle() {
+function generatePuzzle(shouldLock) {
     let puzNum = Math.floor(Math.random() * basePuzzles.length);
     console.log("Puznum: " + puzNum);
     let puz = basePuzzles[puzNum];
@@ -616,76 +663,83 @@ function generatePuzzle() {
     }
 
     // Difficulty settings!
-    switch (DIFFICULTY) {
-        case 0: // Easiest: Just connect them
-            for (let x = 0; x < 9; x++) {
-                for (let y = 0; y < 9; y++) {
-                    if (grid[x][y].val % 3 == grid[x][y].group % 3) {
-                        grid[x][y].group = 0;
-                    } else {
-                        locks[x][y] = true;
+    if (shouldLock) {
+        switch (DIFFICULTY) {
+            case 0: // Easiest: Just connect them
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val % 3 == grid[x][y].group % 3) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
                     }
                 }
-            }
-            break;
-        case 1: // Easy: Connect patchier groups
-            for (let x = 0; x < 9; x++) {
-                for (let y = 0; y < 9; y++) {
-                    if (grid[x][y].val % 2 != grid[x][y].group % 2) {
-                        grid[x][y].group = 0;
-                    } else {
-                        locks[x][y] = true;
+                break;
+            case 1: // Easy: Connect patchier groups
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val % 2 != grid[x][y].group % 2) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
                     }
                 }
-            }
-            break;
-        case 2: // Medium: Connect with only 3
-            for (let x = 0; x < 9; x++) {
-                for (let y = 0; y < 9; y++) {
-                    if (grid[x][y].val % 3 != grid[x][y].group % 3) {
-                        grid[x][y].group = 0;
-                    } else {
-                        locks[x][y] = true;
+                break;
+            case 2: // Medium: Connect with only 3
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val % 3 != grid[x][y].group % 3) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
                     }
                 }
-            }
-            break;
-        case 4: // Hard: Each group has a unique number
-            for (let x = 0; x < 9; x++) {
-                for (let y = 0; y < 9; y++) {
-                    if (grid[x][y].val != grid[x][y].group) {
-                        grid[x][y].group = 0;
-                    } else {
-                        locks[x][y] = true;
+                break;
+            case 4: // Hard: Each group has a unique number
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (grid[x][y].val != grid[x][y].group) {
+                            grid[x][y].group = 0;
+                        } else {
+                            locks[x][y] = true;
+                        }
                     }
                 }
-            }
-            break;
-        case 3: // Master: Find a spot where three/four intersect
-            for (let x = 0; x < 8; x++) {
-                for (let y = 0; y < 8; y++) {
-                    if (grid[x][y].group != grid[x + 1][y].group &&
-                        grid[x][y].group != grid[x][y + 1].group &&
-                        grid[x + 1][y].group != grid[x][y + 1].group) {
-                        locks[x][y] = true;
-                        locks[x + 1][y] = true;
-                        locks[x][y + 1] = true;
-                        // x = 8;
-                        // y = 8;
-                        // continue;
+                break;
+            case 3: // Master: Find a spot where three/four intersect
+                for (let x = 0; x < 8; x++) {
+                    for (let y = 0; y < 8; y++) {
+                        if (grid[x][y].group != grid[x + 1][y].group &&
+                            grid[x][y].group != grid[x][y + 1].group &&
+                            grid[x + 1][y].group != grid[x][y + 1].group) {
+                            locks[x][y] = true;
+                            locks[x + 1][y] = true;
+                            locks[x][y + 1] = true;
+                            // x = 8;
+                            // y = 8;
+                            // continue;
+                        }
                     }
                 }
-            }
-            for (let x = 0; x < 9; x++) {
-                for (let y = 0; y < 9; y++) {
-                    if (!locks[x][y]) {
-                        grid[x][y].group = 0;
+                for (let x = 0; x < 9; x++) {
+                    for (let y = 0; y < 9; y++) {
+                        if (!locks[x][y]) {
+                            grid[x][y].group = 0;
+                        }
                     }
                 }
+                break;
+        }
+    } else {
+        for (let x = 0; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+                grid[x][y].group = 0;
             }
-            break;
+        }
     }
-
 
     // Shuffle the grid!
     for (let i = 0; i < 50; i++) {
@@ -761,8 +815,9 @@ function flipGrid() {
 
 window.onload = function () {
     // Init Gfx
-    fgcolor = getRandomRgb(50, 100);
+    fgcolor = getRandomRgb(100, 150);
     bgcolor = getRandomRgb(200, 250);
+    uiColor = 90 * Math.ceil(Math.random() * 9);
     srcCanvas = document.createElement('canvas');
     srcCanvas.width = 1200;
     srcCanvas.height = 900;
@@ -784,8 +839,22 @@ window.onload = function () {
     window.addEventListener('mouseup', mouseUp);
 
     // Kick everything off!
-    generatePuzzle();
+    makeAttractScreen();
     resizeGame();
     window.setTimeout(update, 1000 / 60);
     drawScreen();
 };
+
+function makeAttractScreen() {
+    generatePuzzle(false);
+}
+
+function startGame() {
+    generatePuzzle(true);
+    youWon = false;
+    gameInProgress = true;
+    showResetButton = true;
+    fgcolor = getRandomRgb(100, 150);
+    bgcolor = getRandomRgb(200, 250);
+    uiColor = 90 * Math.ceil(Math.random() * 9);
+}
