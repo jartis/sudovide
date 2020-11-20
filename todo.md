@@ -13,7 +13,8 @@
 * ~~Color switches on new puzzle / refresh~~
 * ~~Refactor stuff outside of the onload~~
 * ~~Attract Screen / Title Screen~~
-* ~~Better Font~~* Add more puzzles
+* ~~Better Font~~
+* Add more puzzles
 * Save and load
 * SFX (?)
 * More VFX
