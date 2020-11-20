@@ -25,3 +25,4 @@
 * Flag errors (multiples within group)
 * Swizzle puzzles for easier parsing
 * Fix group graphic transparency issues
+* Touch events on phone device thing

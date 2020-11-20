@@ -865,7 +865,7 @@ window.onload = function () {
     groupsImg.addEventListener('load', function () {
         let loaded = true;
     }, false);
-    groupsImg.src = 'img/cellbg3.png'; // Set source path
+    groupsImg.src = 'img/cellbg.png'; // Set source path
 
     // Add the handlers
     window.addEventListener('resize', resizeGame);
