@@ -1,5 +1,7 @@
 //#region Meta
 const VERSION = 1;
+const WHITE = "#FFFFFF";
+const BLACK = "#000000";
 //#endregion
 
 //#region Game Vars
@@ -8,7 +10,6 @@ var winGrid = [];
 var locks = [];
 var fgcolor;
 var bgcolor;
-var uiColor;
 var nextGroup = 1; // The next group to start assigning on clicking empty
 var mDown = false;
 var lastCellX = -1;
@@ -18,20 +19,54 @@ var lastLastY = -1;
 var groupHist = [];
 var gameInProgress = false;
 var youWon = false;
-
-var DIFFICULTY = 3;
+var difficulty = 0;
 var showComplete = true;
+
 var SHOWERROR = true;
 //#endregion
 
 //#region UI Vars
-var showResetButton = false;
-var showNewGameButton = true;
-var mouseOverResetButton = false;
-var mouseDownResetButton = false;
-var mouseOverNewGameButton = false;
-var mouseDownNewGameButton = false;
+var resetButton = {
+    show: false,
+    down: false,
+    over: false,
+    x: 895,
+    y: 765,
+    contains: function (mx, my) {
+        return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
+    },
+    label: "Reset Puzzle",
+    uiColor: 90,
+};
+
+var newGameButton = {
+    show: true,
+    down: false,
+    over: false,
+    x: 895,
+    y: 135,
+    contains: function (mx, my) {
+        return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
+    },
+    label: "New Game",
+    uiColor: 90,
+};
+
+var difficultyButton = {
+    show: true,
+    down: false,
+    over: false,
+    x: 895,
+    y: 225,
+    contains: function (mx, my) {
+        return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
+    },
+    label: "Diff: Easy",
+    uiColor: 90,
+};
+
 //#endregion
+
 
 //#region Gfx Vars
 var srcCanvas;
@@ -75,7 +110,7 @@ var basePuzzles = [
 //#region Drawing
 function drawScreen() {
     ctx.fillStyle = bgcolor;
-    ctx.globalAlpha = 0.2;
+    ctx.globalAlpha = 0.3;
     ctx.fillRect(0, 0, 1200, 900);
     ctx.globalAlpha = 1;
 
@@ -115,13 +150,13 @@ function drawStatus() {
     for (let x = 0; x < 9; x++) {
         for (let y = 0; y < 9; y++) {
             // if (SHOWCOMPLETE && grps[grid[x][y].group - 1]) {
-            //     ctx.font = "60px Arial";
+            //     ctx.font = "60px Modak";
             //     ctx.globalAlpha = 0.5;
             //     ctx.fillText("✅", (90 * x) + 45, (90 * y) + 50);
             //     ctx.globalAlpha = 1;
             // }
             // if (SHOWERROR && grid[x][y].group > 0) {
-            //     ctx.font = "70px Arial";
+            //     ctx.font = "70px Modak";
             //     ctx.globalAlpha = 0.25;
             //     ctx.fillText("⛔", (90 * x) + 45, (90 * y) + 50);
             //     ctx.globalAlpha = 1;
@@ -236,23 +271,23 @@ function drawGrid() {
             // ctx.stroke();
 
             if (grid[x][y].val > 0) {
-                ctx.font = "60px Sans";
+                ctx.font = '60px "Fredoka One"';
                 ctx.textBaseline = "middle";
                 ctx.textAlign = "center";
                 if (locks[x][y]) {
-                    ctx.font = "60px Arial";
-                    ctx.fillStyle = "#000000";
-                    ctx.strokeStyle = "#FFFFFF";
+                    ctx.font = '60px "Fredoka One"';
+                    ctx.fillStyle = BLACK;
+                    ctx.strokeStyle = WHITE;
                     ctx.lineWidth = 2;
                     ctx.strokeText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                     ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                 } else {
-                    ctx.font = "60px Arial";
-                    ctx.fillStyle = "#000000";
+                    ctx.font = '60px "Fredoka One"';
+                    ctx.fillStyle = BLACK;
                     ctx.fillText(grid[x][y].val, (90 * x) + 48, (90 * y) + 51);
-                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillStyle = WHITE;
                     ctx.fillText(grid[x][y].val, (90 * x) + 44, (90 * y) + 49);
-                    ctx.fillStyle = grid[x][y].group > 0 ? bgcolor : fgcolor;
+                    ctx.fillStyle = grid[x][y].group > 0 ? WHITE : fgcolor;
                     ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                 }
             }
@@ -262,61 +297,54 @@ function drawGrid() {
 }
 
 function drawHud() {
-    ctx.font = "60px Arial";
-    ctx.textBaseline = "top";
+    ctx.font = '60px "Fredoka One"';
+    ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillStyle = "#000000";
-    ctx.fillText("Sudovide", 1031, 51);
+    ctx.fillStyle = BLACK;
+    ctx.fillText("Sudovide", 1031, 96);
     ctx.fillStyle = fgcolor;
-    ctx.fillText("Sudovide", 1029, 49);
+    ctx.fillText("Sudovide", 1029, 94);
 
     if (youWon) {
-        ctx.font = "30px Arial";
+        ctx.font = '120px "Fredoka One"';
 
-        ctx.fillStyle = "#000000";
-        ctx.fillText("You Won!", 1031, 151);
-        ctx.fillStyle = fgcolor;
-        ctx.fillText("You Won!", 1029, 149);
+        ctx.fillStyle = WHITE;
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = BLACK;
+        ctx.strokeText("You Won!", 450, 400);
+        ctx.fillText("You Won!", 450, 400);
     }
 
-    if (showResetButton) {
-        let bOffset = mouseOverResetButton ? 900 : 0;
-        if (mouseDownResetButton) {
-            bOffset = 1800;
-        }
-        ctx.drawImage(groupsImg, 90 * 13, bOffset + uiColor, 90, 90, 895, 765, 90, 90);
-        ctx.drawImage(groupsImg, 90 * 5, bOffset + uiColor, 90, 90, 985, 765, 90, 90);
-        ctx.drawImage(groupsImg, 90 * 7, bOffset + uiColor, 90, 90, 1075, 765, 90, 90);
-
-        ctx.font = "36px Arial";
-        ctx.fillStyle = "#000000";
-        ctx.fillText("Reset Puzzle", 1031, 796);
-        ctx.fillStyle = "#FFFFFF";
-        if (mouseOverResetButton || mouseDownResetButton) {
-            ctx.fillStyle = fgcolor;
-        }
-        ctx.fillText("Reset Puzzle", 1029, 794);
+    if (resetButton.show) {
+        drawButton(resetButton);
     }
 
-    if (showNewGameButton) {
-        let bOffset = mouseOverNewGameButton ? 900 : 0;
-        if (mouseDownNewGameButton) {
-            bOffset = 1800;
-        }
-        ctx.drawImage(groupsImg, 90 * 13, bOffset + uiColor, 90, 90, 895, 135, 90, 90);
-        ctx.drawImage(groupsImg, 90 * 5, bOffset + uiColor, 90, 90, 985, 135, 90, 90);
-        ctx.drawImage(groupsImg, 90 * 7, bOffset + uiColor, 90, 90, 1075, 135, 90, 90);
-
-        ctx.font = "36px Arial";
-        ctx.fillStyle = "#000000";
-        ctx.fillText("New Game", 1031, 166);
-        ctx.fillStyle = "#FFFFFF";
-        if (mouseOverNewGameButton || mouseDownNewGameButton) {
-            ctx.fillStyle = fgcolor;
-        }
-        ctx.fillText("New Game", 1029, 164);
+    if (newGameButton.show) {
+        drawButton(newGameButton);
     }
 
+    if (difficultyButton.show) {
+        drawButton(difficultyButton);
+    }
+}
+
+function drawButton(btn) {
+    let bOffset = btn.over ? 900 : 0;
+    if (btn.down) {
+        bOffset = 1800;
+    }
+    ctx.drawImage(groupsImg, 90 * 13, bOffset + btn.uiColor, 90, 90, btn.x, btn.y, 90, 90);
+    ctx.drawImage(groupsImg, 90 * 5, bOffset + btn.uiColor, 90, 90, btn.x + 90, btn.y, 90, 90);
+    ctx.drawImage(groupsImg, 90 * 7, bOffset + btn.uiColor, 90, 90, btn.x + 180, btn.y, 90, 90);
+
+    ctx.font = '36px "Fredoka One"';
+    ctx.fillStyle = BLACK;
+    ctx.fillText(btn.label, btn.x + 136, btn.y + 49);
+    ctx.fillStyle = bgcolor;
+    if (btn.over || btn.down) {
+        ctx.fillStyle = WHITE;
+    }
+    ctx.fillText(btn.label, btn.x + 134, btn.y + 47);
 }
 
 function getRandomRgb(lo, hi) {
@@ -342,14 +370,15 @@ function mouseDown(e) {
         mDown = false;
 
         // Reset button
-        if (mX > 895 && mX < 1165 && mY > 765 && mY < 855) {
-            mouseDownResetButton = true;
-        }
-        else if (mX > 895 && mX < 1165 && mY > 135 && mY < 225) {
-            mouseDownNewGameButton = true;
+        if (resetButton.contains(mX, mY)) {
+            resetButton.down = true;
+        } else if (newGameButton.contains(mX, mY)) {
+            newGameButton.down = true;
+        } else if (difficultyButton.contains(mX, mY)) {
+            difficultyButton.down = true;
         }
     } else {
-        if (youWon) {
+        if (youWon || !gameInProgress) {
             return;
         }
         // Special case: Group hist check, if there are any empty groups, start one here.
@@ -377,17 +406,19 @@ function mouseUp(e) {
     if (newX > 8 || newY > 8 || newX < 0 || newY < 0) {
         // Off grid
         mDown = false;
-        if (mX > 895 && mX < 1165 && mY > 765 && mY < 855 && mouseDownResetButton) {
+        if (resetButton.contains(mX, mY) && resetButton.down) {
             resetGroups();
-        }
-        else if (mX > 895 && mX < 1165 && mY > 135 && mY < 225 && mouseDownNewGameButton) {
+        } else if (newGameButton.contains(mX, mY) && newGameButton.down) {
             startGame();
+        } else if (difficultyButton.contains(mX, mY) && difficultyButton.down) {
+            changeDiff();
         }
 
-        mouseDownResetButton = false;
-        mouseDownNewGameButton = false;
+        resetButton.down = false;
+        newGameButton.down = false;
+        difficultyButton.down = false;
     } else {
-        if (youWon) {
+        if (youWon || !gameInProgress) {
             return;
         }
         if (lastLastX == -1 && lastLastY == -1) {
@@ -407,13 +438,14 @@ function handleMouseMove(e) {
     let cellX = Math.floor((mX - 45) / 90);
     let cellY = Math.floor((mY - 45) / 90);
     if (cellX < 0 || cellX > 8 || cellY < 0 || cellY > 8) {
-        mouseOverResetButton = (mX > 895 && mX < 1165 && mY > 765 && mY < 855);
-        mouseOverNewGameButton = (mX > 895 && mX < 1165 && mY > 135 && mY < 225);
+        resetButton.over = resetButton.contains(mX, mY);
+        newGameButton.over = newGameButton.contains(mX, mY);
+        difficultyButton.over = difficultyButton.contains(mX, mY);
     } else {
         if (!mDown) {
             return;
         }
-        if (youWon) {
+        if (youWon || !gameInProgress) {
             return;
         }
         if (cellX != lastCellX || cellY != lastCellY) {
@@ -497,7 +529,8 @@ function update() {
     } else if (!youWon) {
         if (checkForWin()) {
             youWon = true;
-            showResetButton = false;
+            resetButton.show = false;
+            difficultyButton.show = true;
         }
     }
 }
@@ -664,7 +697,7 @@ function generatePuzzle(shouldLock) {
 
     // Difficulty settings!
     if (shouldLock) {
-        switch (DIFFICULTY) {
+        switch (difficulty) {
             case 0: // Easiest: Just connect them
                 for (let x = 0; x < 9; x++) {
                     for (let y = 0; y < 9; y++) {
@@ -817,7 +850,9 @@ window.onload = function () {
     // Init Gfx
     fgcolor = getRandomRgb(100, 150);
     bgcolor = getRandomRgb(200, 250);
-    uiColor = 90 * Math.ceil(Math.random() * 9);
+    newGameButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    resetButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    difficultyButton.uiColor = 90 * Math.ceil(Math.random() * 9);
     srcCanvas = document.createElement('canvas');
     srcCanvas.width = 1200;
     srcCanvas.height = 900;
@@ -853,8 +888,33 @@ function startGame() {
     generatePuzzle(true);
     youWon = false;
     gameInProgress = true;
-    showResetButton = true;
+    resetButton.show = true;
+    difficultyButton.show = false;
     fgcolor = getRandomRgb(100, 150);
     bgcolor = getRandomRgb(200, 250);
-    uiColor = 90 * Math.ceil(Math.random() * 9);
+    newGameButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    resetButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    difficultyButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+}
+
+function changeDiff() {
+    difficulty += 1;
+    difficulty %= 5;
+    switch (difficulty) {
+        case 0:
+            difficultyButton.label = "Diff: Easy";
+            break;
+        case 1:
+            difficultyButton.label = "Diff: Cool";
+            break;
+        case 2:
+            difficultyButton.label = "Diff: Warm";
+            break;
+        case 3:
+            difficultyButton.label = "Diff: Hard";
+            break;
+        case 4:
+            difficultyButton.label = "Diff: Mean";
+            break;
+    }
 }
