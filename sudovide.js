@@ -406,11 +406,11 @@ function mouseUp(e) {
     if (newX > 8 || newY > 8 || newX < 0 || newY < 0) {
         // Off grid
         mDown = false;
-        if (resetButton.contains(mX, mY) && resetButton.down) {
+        if (resetButton.contains(mX, mY) && resetButton.down && resetButton.show) {
             resetGroups();
-        } else if (newGameButton.contains(mX, mY) && newGameButton.down) {
+        } else if (newGameButton.contains(mX, mY) && newGameButton.down && newGameButton.show) {
             startGame();
-        } else if (difficultyButton.contains(mX, mY) && difficultyButton.down) {
+        } else if (difficultyButton.contains(mX, mY) && difficultyButton.down && difficultyButton.show) {
             changeDiff();
         }
 
