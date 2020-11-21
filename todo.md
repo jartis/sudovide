@@ -15,8 +15,8 @@
 * ~~Attract Screen / Title Screen~~
 * ~~Better Font~~
 * ~~Timer~~
+* ~~Swizzle puzzles for easier parsing~~
 * Add more puzzles
-* Save and load
 * SFX (?)
 * More VFX
     * VFX update: Cells own position? (for vibing / cascading)
@@ -24,6 +24,11 @@
 * Cheat codes to enable certain modes?
 * Game options / logic with modal?
 * Flag errors (multiples within group)
-* Swizzle puzzles for easier parsing
 * Fix group graphic transparency issues
 * Touch events on phone device thing
+* Credits and maybe link
+* Color Scheme Switching Button
+
+## To don't (unless pressed otherwise)
+
+* Save and load (Games are very short)
