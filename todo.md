@@ -14,12 +14,13 @@
 * ~~Refactor stuff outside of the onload~~
 * ~~Attract Screen / Title Screen~~
 * ~~Better Font~~
+* ~~Timer~~
 * Add more puzzles
 * Save and load
 * SFX (?)
 * More VFX
     * VFX update: Cells own position? (for vibing / cascading)
-* Game Modes: Timed, score, "No Return"?
+* Game Modes: ~~Timed~~, score, "No Return"?
 * Cheat codes to enable certain modes?
 * Game options / logic with modal?
 * Flag errors (multiples within group)

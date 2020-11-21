@@ -21,6 +21,9 @@ var gameInProgress = false;
 var youWon = false;
 var difficulty = 0;
 var showComplete = true;
+var timer = 0;
+var timerString = "00:00";
+var myTimer;
 
 var SHOWERROR = true;
 //#endregion
@@ -44,7 +47,7 @@ var newGameButton = {
     down: false,
     over: false,
     x: 895,
-    y: 135,
+    y: 225,
     contains: function (mx, my) {
         return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
     },
@@ -57,7 +60,7 @@ var difficultyButton = {
     down: false,
     over: false,
     x: 895,
-    y: 225,
+    y: 315,
     contains: function (mx, my) {
         return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
     },
@@ -305,6 +308,15 @@ function drawHud() {
     ctx.fillStyle = fgcolor;
     ctx.fillText("Sudovide", 1029, 94);
 
+    if (gameInProgress) {
+        ctx.font = '36px "Fredoka One"';
+        ctx.fillStyle = BLACK;
+        ctx.fillText(timerString, 1031, 179);
+        ctx.fillStyle = fgcolor;
+        ctx.fillText(timerString, 1029, 177);
+    
+    }
+
     if (youWon) {
         ctx.font = '120px "Fredoka One"';
 
@@ -528,6 +540,7 @@ function update() {
         grid[nx][ny].val = num;
     } else if (!youWon) {
         if (checkForWin()) {
+            window.clearInterval(myTimer);
             youWon = true;
             resetButton.show = false;
             difficultyButton.show = true;
@@ -846,6 +859,11 @@ function flipGrid() {
 }
 //#endregion
 
+function tickTimer() {
+    timer++;
+    timerString = new Date(timer * 1000).toISOString().substr(11, 8);
+}
+
 window.onload = function () {
     // Init Gfx
     fgcolor = getRandomRgb(100, 150);
@@ -885,6 +903,9 @@ function makeAttractScreen() {
 }
 
 function startGame() {
+    timer = 0;
+    myTimer = window.setInterval(tickTimer, 1000);
+    tickTimer();
     generatePuzzle(true);
     youWon = false;
     gameInProgress = true;
