@@ -279,8 +279,8 @@ function drawGrid() {
                 ctx.textAlign = "center";
                 if (locks[x][y]) {
                     ctx.font = '60px "Fredoka One"';
-                    ctx.fillStyle = BLACK;
-                    ctx.strokeStyle = WHITE;
+                    ctx.fillStyle = WHITE;
+                    ctx.strokeStyle = BLACK;
                     ctx.lineWidth = 2;
                     ctx.strokeText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                     ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
@@ -290,7 +290,7 @@ function drawGrid() {
                     ctx.fillText(grid[x][y].val, (90 * x) + 48, (90 * y) + 51);
                     ctx.fillStyle = WHITE;
                     ctx.fillText(grid[x][y].val, (90 * x) + 44, (90 * y) + 49);
-                    ctx.fillStyle = grid[x][y].group > 0 ? WHITE : fgcolor;
+                    ctx.fillStyle = fgcolor;
                     ctx.fillText(grid[x][y].val, (90 * x) + 45, (90 * y) + 50);
                 }
             }
@@ -898,6 +898,7 @@ function makeAttractScreen() {
 
 function startGame() {
     timer = 0;
+    window.clearInterval(myTimer);
     myTimer = window.setInterval(tickTimer, 1000);
     tickTimer();
     generatePuzzle(true);

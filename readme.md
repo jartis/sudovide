@@ -1,4 +1,12 @@
-# Todo:
+# Sudovide
+
+## What
+
+Sudovide (soo-doh-vaid) is a puzzle game about dividing (-vide) a solved Sudoku (sudo-) into irregular groups. The solution clues given are *NOT* guaranteed to have 3x3 squares with the digits 1-9 uniquely, but there are contiguous regions that contain the digits once. 
+
+Use the mouse to drag and extend regions from the starting clues to mark out these regions. Click on a cell that is already in a group to remove its group. Clues given at the start are in white - these cannot change groups. 
+
+## Todo:
 
 * ~~"Reset Puzzle" button~~
 * ~~Detect win~~
@@ -16,6 +24,7 @@
 * ~~Better Font~~
 * ~~Timer~~
 * ~~Swizzle puzzles for easier parsing~~
+* ~~Fix group graphic transparency issues~~
 * Add more puzzles
 * SFX (?)
 * More VFX
@@ -24,7 +33,6 @@
 * Cheat codes to enable certain modes?
 * Game options / logic with modal?
 * Flag errors (multiples within group)
-* Fix group graphic transparency issues
 * Touch events on phone device thing
 * Credits and maybe link
 * Color Scheme Switching Button
@@ -32,3 +40,4 @@
 ## To don't (unless pressed otherwise)
 
 * Save and load (Games are very short)
+* 
