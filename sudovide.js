@@ -68,8 +68,122 @@ var difficultyButton = {
     uiColor: 90,
 };
 
+var saveButton = {
+    show: false,
+    down: false,
+    over: false,
+    x: 895,
+    y: 495,
+    contains: function (mx, my) {
+        return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
+    },
+    label: "Save",
+    uiColor: 90,
+};
+
+var loadButton = {
+    show: true,
+    down: false,
+    over: false,
+    x: 895,
+    y: 585,
+    contains: function (mx, my) {
+        return (mx > this.x && mx < this.x + 270 && my > this.y && my < this.y + 90);
+    },
+    label: "Load",
+    uiColor: 90,
+};
+
 //#endregion
 
+//#region Saving and Loading
+
+function buildSaveString() {
+    let saveString = "";
+    for (let x = 0; x < 9; x++) {
+        for (let y = 0; y < 9; y++) {
+            saveString = saveString.concat(grid[x][y].val.toString());
+            if (grid[x][y].group > 0) {
+                if (locks[x][y]) {
+                    let grp = String.fromCharCode(96 + grid[x][y].group);
+                    saveString = saveString.concat(grp);
+                } else {
+                    let grp = String.fromCharCode(64 + grid[x][y].group);
+                    saveString = saveString.concat(grp);
+                }
+            }
+        }
+    }
+    return saveString;
+}
+
+function parseSaveString(saveString) {
+    for (let x = 0; x < 9; x++) {
+        for (let y = 0; y < 9; y++) {
+            if (!isNum(saveString[0]) || saveString.length < 1) {
+                return false;
+            }
+            grid[x][y].value = parseInt(saveString[0]);
+            locks[x][y] = false;
+            grid[x][y].group = 0;
+            saveString = saveString.substring(1);
+            if (isAlpha(saveString[0])) {
+                let grp = saveString.charCodeAt(0);
+                if (grp > 96 && grp < 106) {
+                    grid[x][y].group = grp - 96;
+                    locks[x][y] = true;
+                } else if (grp > 64 && grp < 74) {
+                    grid[x][y].group = grp - 64;
+                    locks[x][y] = false;
+                } else {
+                    return false;
+                }
+                saveString = saveString.substring(1);
+            }
+        }
+    }
+    return true;
+}
+
+function isAlpha(ch) {
+    return /^[A-Z]$/i.test(ch);
+}
+
+function isNum(ch) {
+    return /^[1-9]$/.test(ch);
+}
+
+function doSave() {
+    let saveString = buildSaveString();
+    window.prompt("Copy this save data!", saveString);
+}
+
+function doLoad() {
+    let saveData = window.prompt("Paste puzzle data:");
+    timer = 0;
+    window.clearInterval(myTimer);
+    myTimer = window.setInterval(tickTimer, 1000);
+    tickTimer();
+    if (!parseSaveString(saveData)) {
+        window.alert("Error loading puzzle!");
+        generatePuzzle(true);
+    }
+    youWon = false;
+    gameInProgress = true;
+    resetButton.show = true;
+    difficultyButton.show = false;
+    saveButton.show = true;
+    loadButton.show = true;
+    fgcolor = getRandomRgb(100, 150);
+    bgcolor = getRandomRgb(200, 250);
+    newGameButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    resetButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    difficultyButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    saveButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    loadButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+}
+
+//#endregion
 
 //#region Gfx Vars
 var srcCanvas;
@@ -338,6 +452,14 @@ function drawHud() {
     if (difficultyButton.show) {
         drawButton(difficultyButton);
     }
+
+    if (saveButton.show) {
+        drawButton(saveButton);
+    }
+
+    if (loadButton.show) {
+        drawButton(loadButton);
+    }
 }
 
 function drawButton(btn) {
@@ -388,6 +510,10 @@ function mouseDown(e) {
             newGameButton.down = true;
         } else if (difficultyButton.contains(mX, mY)) {
             difficultyButton.down = true;
+        } else if (saveButton.contains(mX, mY)) {
+            saveButton.down = true;
+        } else if (loadButton.contains(mX, mY)) {
+            loadButton.down = true;
         }
     } else {
         if (youWon || !gameInProgress) {
@@ -424,11 +550,17 @@ function mouseUp(e) {
             startGame();
         } else if (difficultyButton.contains(mX, mY) && difficultyButton.down && difficultyButton.show) {
             changeDiff();
+        } else if (saveButton.contains(mX, mY) && saveButton.down && saveButton.show) {
+            doSave();
+        } else if (loadButton.contains(mX, mY) && loadButton.down && loadButton.show) {
+            doLoad();
         }
 
         resetButton.down = false;
         newGameButton.down = false;
         difficultyButton.down = false;
+        saveButton.down = false;
+        loadButton.down = false;
     } else {
         if (youWon || !gameInProgress) {
             return;
@@ -453,6 +585,8 @@ function handleMouseMove(e) {
         resetButton.over = resetButton.contains(mX, mY);
         newGameButton.over = newGameButton.contains(mX, mY);
         difficultyButton.over = difficultyButton.contains(mX, mY);
+        saveButton.over = saveButton.contains(mX, mY);
+        loadButton.over = loadButton.contains(mX, mY);
     } else {
         if (!mDown) {
             return;
@@ -544,6 +678,7 @@ function update() {
             youWon = true;
             resetButton.show = false;
             difficultyButton.show = true;
+            saveButton.show = false;
         }
     }
 }
@@ -865,6 +1000,8 @@ window.onload = function () {
     newGameButton.uiColor = 90 * Math.ceil(Math.random() * 9);
     resetButton.uiColor = 90 * Math.ceil(Math.random() * 9);
     difficultyButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    saveButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    loadButton.uiColor = 90 * Math.ceil(Math.random() * 9);
     srcCanvas = document.createElement('canvas');
     srcCanvas.width = 1200;
     srcCanvas.height = 900;
@@ -906,11 +1043,15 @@ function startGame() {
     gameInProgress = true;
     resetButton.show = true;
     difficultyButton.show = false;
+    saveButton.show = true;
+    loadButton.show = true;
     fgcolor = getRandomRgb(100, 150);
     bgcolor = getRandomRgb(200, 250);
     newGameButton.uiColor = 90 * Math.ceil(Math.random() * 9);
     resetButton.uiColor = 90 * Math.ceil(Math.random() * 9);
     difficultyButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    saveButton.uiColor = 90 * Math.ceil(Math.random() * 9);
+    loadButton.uiColor = 90 * Math.ceil(Math.random() * 9);
 }
 
 function changeDiff() {

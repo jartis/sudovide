@@ -25,6 +25,7 @@ Use the mouse to drag and extend regions from the starting clues to mark out the
 * ~~Timer~~
 * ~~Swizzle puzzles for easier parsing~~
 * ~~Fix group graphic transparency issues~~
+* ~~Puzzle import/export (in lieu of save/load)~~
 * Add more puzzles
 * SFX (?)
 * More VFX
@@ -36,8 +37,9 @@ Use the mouse to drag and extend regions from the starting clues to mark out the
 * Touch events on phone device thing
 * Credits and maybe link
 * Color Scheme Switching Button
+* Refactor buttons to classes
+* Savegame versioning and time?
 
 ## To don't (unless pressed otherwise)
 
-* Save and load (Games are very short)
-* 
+* ~~Save and load (Games are very short)~~ I guess I accidentally did this?
