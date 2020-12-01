@@ -1,7 +1,22 @@
 //#region Meta
-const VERSION = 1;
+const VERSION = 2;
 const WHITE = "#FFFFFF";
 const BLACK = "#000000";
+var prefs = {};
+const instString = [
+    "This sudoku puzzle is made of",
+    "irregular regions that each contain",
+    "the number 1-9 exactly once. Click",
+    "and drag to draw contiguous groups",
+    "containing each digit once. Complete",
+    "the grid to win the game!",
+    "Some difficulty levels will not have",
+    "clues at the start for all groups.",
+    "Click any number to start a new group.",
+    "",
+    "Click anywhere to continue",
+];
+
 //#endregion
 
 //#region Game Vars
@@ -24,6 +39,19 @@ var showComplete = true;
 var timer = 0;
 var timerString = "00:00";
 var myTimer;
+var instructionsUp = false;
+var instColor = 0;
+var cgroups = [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+]
 
 var SHOWERROR = true;
 //#endregion
@@ -231,9 +259,13 @@ function drawScreen() {
     ctx.fillRect(0, 0, 1200, 900);
     ctx.globalAlpha = 1;
 
-    //drawStatus();
-    drawGroups();
-    drawGrid();
+    if (instructionsUp) {
+        drawInstructions();
+    } else {
+        //drawStatus();
+        drawGroups();
+        drawGrid();
+    }
     drawHud();
 
     dstctx.fillStyle = bgcolor;
@@ -298,7 +330,7 @@ function drawGroups() {
                 allFull = false;
             }
         }
-        if (allFull && groupHist[grp + 1] == 9) {
+        if (allFull && groupHist[grp + 1] == 9 && cgroups[grp]) {
             grps[grp] = true;
         }
     }
@@ -363,6 +395,38 @@ function drawGroups() {
     }
 
     ctx.setTransform();
+}
+
+function drawInstructions() {
+    for (let x = 1; x < 8; x++) {
+        for (let y = 1; y < 8; y++) {
+            let which = 0;
+
+            if (x == 1) {
+                which += 8;
+            }
+            if (x == 7) {
+                which += 2;
+            }
+            if (y == 1) {
+                which += 1;
+            }
+            if (y == 7) {
+                which += 4;
+            }
+
+            ctx.drawImage(groupsImg, 90 * which, 90 * instColor, 90, 90, 90 * x, 90 * y, 90, 90);
+        }
+        ctx.font = '30px "Fredoka One"';
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+        for (let i = 0; i < instString.length; i++) {
+            ctx.fillStyle = BLACK;
+            ctx.fillText(instString[i], 406, 201 + (40 * i));
+            ctx.fillStyle = WHITE;
+            ctx.fillText(instString[i], 404, 199 + (40 * i));
+        }
+    }
 }
 
 function drawGrid() {
@@ -536,6 +600,20 @@ function mouseDown(e) {
 
 function mouseUp(e) {
     mDown = false;
+
+    if (instructionsUp) {
+        prefs.seenInstructions = true;
+        resetButton.down = false;
+        newGameButton.down = false;
+        difficultyButton.down = false;
+        saveButton.down = false;
+        loadButton.down = false;
+        instructionsUp = false;
+        localStorage.svPrefs = JSON.stringify(prefs);
+        startGame();
+        return;
+    }
+
     let mX = (e.offsetX - screenOffsetX) / gameScale;
     let mY = (e.offsetY - screenOffsetY) / gameScale;
     let newX = Math.floor((mX - 45) / 90);
@@ -544,12 +622,17 @@ function mouseUp(e) {
     if (newX > 8 || newY > 8 || newX < 0 || newY < 0) {
         // Off grid
         mDown = false;
+
         if (resetButton.contains(mX, mY) && resetButton.down && resetButton.show) {
             resetGroups();
         } else if (newGameButton.contains(mX, mY) && newGameButton.down && newGameButton.show) {
-            startGame();
+            if (prefs.seenInstructions) {
+                startGame();
+            } else {
+                showInstructions();
+            }
         } else if (difficultyButton.contains(mX, mY) && difficultyButton.down && difficultyButton.show) {
-            changeDiff();
+            changeDiff(-1);
         } else if (saveButton.contains(mX, mY) && saveButton.down && saveButton.show) {
             doSave();
         } else if (loadButton.contains(mX, mY) && loadButton.down && loadButton.show) {
@@ -573,6 +656,11 @@ function mouseUp(e) {
             }
         }
     }
+}
+
+function showInstructions() {
+    instColor = Math.ceil(Math.random() * 9);
+    instructionsUp = true;
 }
 
 function handleMouseMove(e) {
@@ -688,6 +776,9 @@ function update() {
 function checkForWin() {
     let didWin = true;
     updateGroupHist();
+    for (let i = 0; i < 9; i++) {
+        cgroups[i] = true;
+    }
     if (!contigGroups()) {
         didWin = false;
     }
@@ -767,23 +858,25 @@ function updateGroupHist() {
 }
 
 function contigGroups() {
+    let areContig = true;
     for (let x = 0; x < 9; x++) {
         for (let y = 0; y < 9; y++) {
             // Only groups
-            if (grid[x][y].groups != 0) {
+            if (grid[x][y].group != 0) {
                 let cGrid = emptyBoolGrid();
                 cGrid = markGroup(x, y, cGrid);
                 for (let cx = 0; cx < 9; cx++) {
                     for (let cy = 0; cy < 9; cy++) {
                         if (grid[cx][cy].group == grid[x][y].group && !cGrid[cx][cy]) {
-                            return false;
+                            areContig = false;
+                            cgroups[grid[cx][cy].group-1] = false;
                         }
                     }
                 }
             }
         }
     }
-    return true;
+    return areContig;
 }
 
 function markGroup(x, y, cGrid) {
@@ -994,6 +1087,24 @@ function tickTimer() {
 }
 
 window.onload = function () {
+    // Get the preferences
+    if (localStorage.svPrefs) {
+        prefs = JSON.parse(localStorage.svPrefs);
+        if (prefs.version < VERSION) {
+            // V2, added "seenInstructions" and "defaultDifficulty"
+            prefs.seenInstructions = false;
+            prefs.defaultDifficulty = 0;
+            prefs.version = VERSION;
+            localStorage.svPrefs = JSON.stringify(prefs);
+        }
+    } else {
+        prefs = {
+            seenInstructions: false,
+            defaultDifficulty: 0,
+            version: VERSION,
+        };
+    }
+
     // Init Gfx
     fgcolor = getRandomRgb(100, 150);
     bgcolor = getRandomRgb(200, 250);
@@ -1026,7 +1137,9 @@ window.onload = function () {
     window.addEventListener("touchstart", touchHandler, true);
     window.addEventListener("touchmove", touchHandler, true);
     window.addEventListener("touchend", touchHandler, true);
-    window.addEventListener("touchcancel", touchHandler, true);   
+    window.addEventListener("touchcancel", touchHandler, true);
+
+    changeDiff(Number(prefs.defaultDifficulty));
 
     // Kick everything off!
     makeAttractScreen();
@@ -1060,9 +1173,13 @@ function startGame() {
     loadButton.uiColor = 90 * Math.ceil(Math.random() * 9);
 }
 
-function changeDiff() {
-    difficulty += 1;
-    difficulty %= 5;
+function changeDiff(newdiff) {
+    if (newdiff == -1) {
+        difficulty += 1;
+        difficulty %= 5;
+    } else {
+        difficulty = newdiff;
+    }
     switch (difficulty) {
         case 0:
             difficultyButton.label = "Diff: Easy";
@@ -1080,20 +1197,27 @@ function changeDiff() {
             difficultyButton.label = "Diff: Mean";
             break;
     }
+    prefs.defaultDifficulty = difficulty;
+    localStorage.svPrefs = JSON.stringify(prefs);
 }
 
 // Touch events (from SO)
-function touchHandler(event)
-{
+function touchHandler(event) {
     var touches = event.changedTouches,
         first = touches[0],
         type = "";
-    switch(event.type)
-    {
-        case "touchstart": type = "mousedown"; break;
-        case "touchmove":  type = "mousemove"; break;        
-        case "touchend":   type = "mouseup";   break;
-        default:           return;
+    switch (event.type) {
+        case "touchstart":
+            type = "mousedown";
+            break;
+        case "touchmove":
+            type = "mousemove";
+            break;
+        case "touchend":
+            type = "mouseup";
+            break;
+        default:
+            return;
     }
 
     // initMouseEvent(type, canBubble, cancelable, view, clickCount, 
@@ -1101,12 +1225,11 @@ function touchHandler(event)
     //                altKey, shiftKey, metaKey, button, relatedTarget);
 
     var simulatedEvent = document.createEvent("MouseEvent");
-    simulatedEvent.initMouseEvent(type, true, true, window, 1, 
-                                  first.screenX, first.screenY, 
-                                  first.clientX, first.clientY, false, 
-                                  false, false, false, 0/*left*/, null);
+    simulatedEvent.initMouseEvent(type, true, true, window, 1,
+        first.screenX, first.screenY,
+        first.clientX, first.clientY, false,
+        false, false, false, 0 /*left*/ , null);
 
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
 }
-
